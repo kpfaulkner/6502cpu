@@ -9,14 +9,17 @@ type Bus struct {
 	ram *RAM
 }
 
-func NewBus(cpu *CPU) *Bus {
-	b := &Bus{cpu: cpu}
-
+func NewBus() *Bus {
+	b := &Bus{}
 	b.ram = NewRAM()
 	return b
 }
 
-func (b *Bus) write(addr uint16, data uint8) {
+func (b *Bus) Connect(cpu *CPU) {
+	b.cpu = cpu
+}
+
+func (b *Bus) Write(addr uint16, data uint8) {
 	if addr < lowestBusAddress || addr > highestBusAddress {
 		// panic... since if reading bus is wrong just fail immediately
 		log.Fatalf("invalid address: %d", addr)
@@ -24,7 +27,7 @@ func (b *Bus) write(addr uint16, data uint8) {
 	b.ram.ram[addr] = data
 }
 
-func (b *Bus) read(addr uint16, readOnly bool) uint8 {
+func (b *Bus) Read(addr uint16, readOnly bool) uint8 {
 	if addr < lowestBusAddress || addr > highestBusAddress {
 		// panic... since if reading bus is wrong just fail immediately
 		log.Fatalf("invalid address: %d", addr)

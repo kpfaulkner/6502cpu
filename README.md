@@ -26,3 +26,4 @@ status: status register  :  (last operation resulted in zero, disable interrupts
 ## See
 
 https://www.youtube.com/watch?v=8XmxKPJDGU0
+https://www.masswerk.at/6502/6502_instruction_set.html

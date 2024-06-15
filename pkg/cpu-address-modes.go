@@ -6,8 +6,8 @@ func (c *CPU) IMP() uint8 {
 	return 0
 }
 func (c *CPU) IMM() uint8 {
-	c.pc++
 	c.addrAbs = c.pc
+	c.pc++
 	return 0
 }
 
@@ -34,7 +34,7 @@ func (c *CPU) ZPY() uint8 {
 func (c *CPU) REL() uint8 {
 	c.addrRel = uint16(c.read(c.pc))
 	c.pc++
-	if c.addrRel&0x80 == 1 {
+	if c.addrRel&0x80 != 0 {
 		c.addrRel |= 0xFF00
 	}
 	return 0

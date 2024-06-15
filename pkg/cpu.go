@@ -55,23 +55,32 @@ func NewCPU(bus *Bus) *CPU {
 }
 
 func (c *CPU) read(addr uint16) uint8 {
-	return c.bus.read(addr, false)
+	return c.bus.Read(addr, false)
 }
 
 func (c *CPU) write(addr uint16, data uint8) {
-	c.bus.write(addr, data)
+	c.bus.Write(addr, data)
 }
 
 func (c *CPU) getFlag(f Flag) Flag {
-	return c.status | f
+
+	if c.status&f > 0 {
+		return 1
+	} else {
+		return 0
+	}
 }
 
-func (c *CPU) setFlag(f Flag, b bool) Flag {
-	c.status = 1 // TODO
-	return 1
+func (c *CPU) setFlag(f Flag, v bool) {
+
+	if v {
+		c.status |= f
+	} else {
+		c.status &= ^f
+	}
 }
 
-func (c *CPU) clock() {
+func (c *CPU) Clock() {
 	if c.cycles == 0 {
 		opCode := c.read(c.pc)
 		c.pc++
@@ -83,7 +92,7 @@ func (c *CPU) clock() {
 	c.cycles--
 }
 
-func (c *CPU) reset() {
+func (c *CPU) Reset() {
 	c.a = 0
 	c.x = 0
 	c.y = 0

@@ -163,10 +163,14 @@ func (c *CPU) CLD() uint8 {
 }
 
 func (c *CPU) CLI() uint8 {
+
+	c.setFlag(I, false)
 	return 0
+
 }
 
 func (c *CPU) CLV() uint8 {
+	c.setFlag(V, false)
 	return 0
 }
 
@@ -186,11 +190,21 @@ func (c *CPU) DEC() uint8 {
 	return 0
 }
 func (c *CPU) DEX() uint8 {
+	c.x--
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 == 1)
 	return 0
 }
+
+// decrement Y register
 func (c *CPU) DEY() uint8 {
+
+	c.y--
+	c.setFlag(Z, c.y == 0x00)
+	c.setFlag(N, c.y&0x80 == 1)
 	return 0
 }
+
 func (c *CPU) EOR() uint8 {
 	return 0
 }
@@ -212,12 +226,25 @@ func (c *CPU) JSR() uint8 {
 	return 0
 }
 func (c *CPU) LDA() uint8 {
+	c.fetch()
+	c.a = c.fetched
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 == 1)
 	return 0
 }
 func (c *CPU) LDX() uint8 {
+	c.fetch()
+	c.x = c.fetched
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 == 1)
 	return 0
 }
 func (c *CPU) LDY() uint8 {
+
+	c.fetch()
+	c.y = c.fetched
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 == 1)
 	return 0
 }
 
@@ -296,10 +323,13 @@ func (c *CPU) SEI() uint8 {
 	return 0
 }
 func (c *CPU) STA() uint8 {
+	c.bus.Write(c.addrAbs, c.a)
 	return 0
 }
 
+// stores X register to addrAbs ?
 func (c *CPU) STX() uint8 {
+	c.bus.Write(c.addrAbs, c.x)
 	return 0
 }
 func (c *CPU) STY() uint8 {
