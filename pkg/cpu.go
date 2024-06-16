@@ -62,13 +62,8 @@ func (c *CPU) write(addr uint16, data uint8) {
 	c.bus.Write(addr, data)
 }
 
-func (c *CPU) getFlag(f Flag) Flag {
-
-	if c.status&f > 0 {
-		return 1
-	} else {
-		return 0
-	}
+func (c *CPU) getFlag(f Flag) bool {
+	return c.status&f > 0
 }
 
 func (c *CPU) setFlag(f Flag, v bool) {
@@ -110,7 +105,7 @@ func (c *CPU) Reset() {
 }
 
 func (c *CPU) irq() {
-	if c.getFlag(I) == 0 {
+	if !c.getFlag(I) {
 		c.write(0x0100+uint16(c.stkp), uint8((c.pc>>8)&0x00FF))
 		c.stkp--
 		c.write(0x0100+uint16(c.stkp), uint8(c.pc&0x00FF))

@@ -5,11 +5,16 @@ func (c *CPU) ADC() uint8 {
 
 	c.fetch()
 
-	temp := uint16(c.a) + uint16(c.fetched) + uint16(c.getFlag(C))
+	var carryBit uint16
+	if c.getFlag(C) {
+		carryBit = 1
+	}
+
+	temp := uint16(c.a) + uint16(c.fetched) + carryBit
 	c.setFlag(C, temp > 255)
 	c.setFlag(Z, (temp&0x00FF) == 0)
-	c.setFlag(N, temp&0x80 == 1)
-	c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) == 1)
+	c.setFlag(N, temp&0x80 > 0)
+	c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) > 0)
 	c.a = uint8(temp & 0x00FF)
 	return 1
 }
@@ -18,7 +23,7 @@ func (c *CPU) AND() uint8 {
 	c.fetch()
 	c.a = c.a & c.fetched
 	c.setFlag(Z, c.a == 0x00)
-	c.setFlag(N, c.a&0x80 == 1)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 1
 }
 
@@ -27,7 +32,7 @@ func (c *CPU) ASL() uint8 {
 }
 
 func (c *CPU) BCC() uint8 {
-	if c.getFlag(C) == 0 {
+	if !c.getFlag(C) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -41,7 +46,7 @@ func (c *CPU) BCC() uint8 {
 }
 
 func (c *CPU) BCS() uint8 {
-	if c.getFlag(C) == 1 {
+	if c.getFlag(C) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -56,7 +61,7 @@ func (c *CPU) BCS() uint8 {
 }
 
 func (c *CPU) BEQ() uint8 {
-	if c.getFlag(Z) == 1 {
+	if c.getFlag(Z) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -75,7 +80,7 @@ func (c *CPU) BIT() uint8 {
 }
 
 func (c *CPU) BMI() uint8 {
-	if c.getFlag(N) == 1 {
+	if c.getFlag(N) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -90,7 +95,7 @@ func (c *CPU) BMI() uint8 {
 }
 
 func (c *CPU) BNE() uint8 {
-	if c.getFlag(Z) == 0 {
+	if !c.getFlag(Z) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -105,7 +110,7 @@ func (c *CPU) BNE() uint8 {
 }
 
 func (c *CPU) BPL() uint8 {
-	if c.getFlag(N) == 0 {
+	if !c.getFlag(N) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -120,11 +125,24 @@ func (c *CPU) BPL() uint8 {
 }
 
 func (c *CPU) BRK() uint8 {
+
+	c.pc++
+	c.setFlag(I, true)
+	c.write(0x0100+uint16(c.stkp), uint8((c.pc>>8)&0x00FF))
+	c.stkp--
+	c.write(0x0100+uint16(c.stkp), uint8(c.pc&0x00FF))
+	c.stkp--
+	c.setFlag(B, true)
+	c.write(0x0100+uint16(c.stkp), uint8(c.status))
+	c.stkp--
+	c.setFlag(B, false)
+	c.pc = uint16(c.read(0xFFFE)) | uint16(c.read(0xFFFF))<<8
+
 	return 0
 }
 
 func (c *CPU) BVC() uint8 {
-	if c.getFlag(V) == 0 {
+	if !c.getFlag(V) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -139,7 +157,7 @@ func (c *CPU) BVC() uint8 {
 }
 
 func (c *CPU) BVS() uint8 {
-	if c.getFlag(V) == 1 {
+	if c.getFlag(V) {
 		c.cycles++
 		c.addrAbs = c.pc + c.addrRel
 
@@ -178,11 +196,27 @@ func (c *CPU) CMP() uint8 {
 	return 0
 }
 
+// CPX: Compare memory and index X
+// Remember for comparison we use the flags to indicate > = or <
+// See http://www.6502.org/tutorials/compare_instructions.html
 func (c *CPU) CPX() uint8 {
+
+	c.fetch()
+	temp := uint16(c.x) - uint16(c.fetched)
+	c.setFlag(C, c.x >= c.fetched)
+	c.setFlag(Z, temp&0x00FF == 0) // check.
+	c.setFlag(N, temp&0x80 > 0)
+
 	return 0
 }
 
 func (c *CPU) CPY() uint8 {
+	c.fetch()
+	temp := uint16(c.y) - uint16(c.fetched)
+	c.setFlag(C, c.y >= c.fetched)
+	c.setFlag(Z, temp&0x00FF == 0) // check.
+	c.setFlag(N, temp&0x80 > 0)
+
 	return 0
 }
 
@@ -192,7 +226,7 @@ func (c *CPU) DEC() uint8 {
 func (c *CPU) DEX() uint8 {
 	c.x--
 	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 == 1)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 
@@ -201,7 +235,7 @@ func (c *CPU) DEY() uint8 {
 
 	c.y--
 	c.setFlag(Z, c.y == 0x00)
-	c.setFlag(N, c.y&0x80 == 1)
+	c.setFlag(N, c.y&0x80 > 0)
 	return 0
 }
 
@@ -212,12 +246,24 @@ func (c *CPU) EOR() uint8 {
 func (c *CPU) INC() uint8 {
 	return 0
 }
+
+// INX: increment X
 func (c *CPU) INX() uint8 {
+
+	c.x++
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
+
+// INX: increment Y
 func (c *CPU) INY() uint8 {
+	c.y++
+	c.setFlag(Z, c.y == 0x00)
+	c.setFlag(N, c.y&0x80 > 0)
 	return 0
 }
+
 func (c *CPU) JMP() uint8 {
 	return 0
 }
@@ -229,14 +275,14 @@ func (c *CPU) LDA() uint8 {
 	c.fetch()
 	c.a = c.fetched
 	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 == 1)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 func (c *CPU) LDX() uint8 {
 	c.fetch()
 	c.x = c.fetched
 	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 == 1)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 func (c *CPU) LDY() uint8 {
@@ -244,7 +290,7 @@ func (c *CPU) LDY() uint8 {
 	c.fetch()
 	c.y = c.fetched
 	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 == 1)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 
@@ -270,7 +316,7 @@ func (c *CPU) PLA() uint8 {
 	c.stkp++
 	c.a = c.read(0x0100 + uint16(c.stkp))
 	c.setFlag(Z, c.a == 0x00)
-	c.setFlag(N, c.a&0x80 == 1)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 0
 }
 func (c *CPU) PLP() uint8 {
@@ -304,11 +350,15 @@ func (c *CPU) SBC() uint8 {
 
 	value := uint16(c.fetched) ^ 0x00FF
 
-	temp := uint16(c.a) + value + uint16(c.getFlag(C))
+	var carryBit uint16
+	if c.getFlag(C) {
+		carryBit = 1
+	}
+	temp := uint16(c.a) + value + carryBit
 	c.setFlag(C, temp > 255)
 	c.setFlag(Z, (temp&0x00FF) == 0)
-	c.setFlag(N, temp&0x80 == 1)
-	c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) == 1)
+	c.setFlag(N, temp&0x80 > 0)
+	c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) > 0)
 	c.a = uint8(temp & 0x00FF)
 	return 1
 }
@@ -335,10 +385,20 @@ func (c *CPU) STX() uint8 {
 func (c *CPU) STY() uint8 {
 	return 0
 }
+
+// TAX: Transfer accumulator to X
 func (c *CPU) TAX() uint8 {
+	c.x = c.a
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 > 0)
+
 	return 0
 }
 func (c *CPU) TAY() uint8 {
+	c.y = c.a
+	c.setFlag(Z, c.y == 0x00)
+	c.setFlag(N, c.y&0x80 > 0)
+
 	return 0
 }
 
@@ -346,12 +406,18 @@ func (c *CPU) TSX() uint8 {
 	return 0
 }
 func (c *CPU) TXA() uint8 {
+	c.a = c.x
+	c.setFlag(Z, c.a == 0x00)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 0
 }
 func (c *CPU) TXS() uint8 {
 	return 0
 }
 func (c *CPU) TYA() uint8 {
+	c.a = c.y
+	c.setFlag(Z, c.a == 0x00)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 0
 }
 

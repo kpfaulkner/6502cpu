@@ -21,9 +21,17 @@ pc: Program counter : 16 bit. Address of next byte to read for program
 status: status register  :  (last operation resulted in zero, disable interrupts etc. Each of these flags is a single bit)
 
 
+For comparison instructions, the results are usually found in flags:
+Compare Result	    N	Z	C
+A, X, or Y < Memory	*	0	0
+A, X, or Y = Memory	0	1	1
+A, X, or Y > Memory	*	0	1
+
 
 
 ## See
 
 https://www.youtube.com/watch?v=8XmxKPJDGU0
 https://www.masswerk.at/6502/6502_instruction_set.html
+
+http://www.6502.org/tutorials/compare_instructions.html

@@ -19,7 +19,7 @@ func main() {
 	cpu := pkg.NewCPU(bus)
 	bus.Connect(cpu)
 
-	data, err := os.ReadFile("data/6502-example.bin")
+	data, err := os.ReadFile("data/6502-stack.bin")
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)
