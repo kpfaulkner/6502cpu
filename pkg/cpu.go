@@ -1,10 +1,56 @@
 package pkg
 
 import (
+	"fmt"
 	"reflect"
 )
 
 type Flag uint8
+
+func (f Flag) String() string {
+	s := ""
+	if f&N > 0 {
+		s += "N"
+	} else {
+		s += "-"
+	}
+	if f&V > 0 {
+		s += "V"
+	} else {
+		s += "-"
+	}
+	if f&U > 0 {
+		s += "U"
+	} else {
+		s += "-"
+	}
+	if f&B > 0 {
+		s += "B"
+	} else {
+		s += "-"
+	}
+	if f&D > 0 {
+		s += "D"
+	} else {
+		s += "-"
+	}
+	if f&I > 0 {
+		s += "I"
+	} else {
+		s += "-"
+	}
+	if f&Z > 0 {
+		s += "Z"
+	} else {
+		s += "-"
+	}
+	if f&C > 0 {
+		s += "C"
+	} else {
+		s += "-"
+	}
+	return s
+}
 
 const (
 	lowestBusAddress  = 0x0000
@@ -83,6 +129,7 @@ func (c *CPU) Clock() {
 		additionalCycle1 := c.lookup[opCode].addr()
 		additionalCycle2 := c.lookup[opCode].op()
 		cycles += (additionalCycle1 & additionalCycle2)
+		c.dump()
 	}
 	c.cycles--
 }
@@ -150,4 +197,9 @@ func (c *CPU) fetch() uint8 {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched
+}
+
+// dump internals out to stdout
+func (c *CPU) dump() {
+	fmt.Printf("A %02x X %02x Y %02x STKP %02x PC %04x Flag %s\n", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
 }
