@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/kpfaulkner/6502cpu/pkg"
 	"os"
+
+	"github.com/kpfaulkner/6502cpu/pkg"
 )
 
 func loadBinaryAtMemoryLocation(bus *pkg.Bus, startAddress uint16, data []byte) {
@@ -19,7 +20,7 @@ func main() {
 	cpu := pkg.NewCPU(bus)
 	bus.Connect(cpu)
 
-	data, err := os.ReadFile("data/6502-stack.bin")
+	data, err := os.ReadFile("data/6502-JSR-RTS-8000-offset.bin")
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)

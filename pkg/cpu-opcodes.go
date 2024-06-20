@@ -265,12 +265,28 @@ func (c *CPU) INY() uint8 {
 }
 
 func (c *CPU) JMP() uint8 {
+	c.pc = c.addrAbs
 	return 0
 }
 
+// JSR: take current program counter, push (MSB then LSB) to stack
+// then set the pc to the absoluteAddress that was read in previously.
 func (c *CPU) JSR() uint8 {
+	c.pc--
+
+	// MSB
+	c.write(0x0100+uint16(c.stkp), uint8((c.pc>>8)&0x00FF))
+	c.stkp--
+
+	// LSB
+	c.write(0x0100+uint16(c.stkp), uint8(c.pc&0x00FF))
+	c.stkp--
+
+	// now PC is where the absolute address is set.
+	c.pc = c.addrAbs
 	return 0
 }
+
 func (c *CPU) LDA() uint8 {
 	c.fetch()
 	c.a = c.fetched
@@ -341,7 +357,19 @@ func (c *CPU) RTI() uint8 {
 	return 0
 }
 
+// RTS: restore pc from the stack.
 func (c *CPU) RTS() uint8 {
+
+	c.stkp++
+	// LSB
+	temp := uint16(c.read(0x0100 + uint16(c.stkp)))
+
+	c.stkp++
+	// MSB
+	temp = temp + (uint16(c.read(0x0100+uint16(c.stkp))) << 8)
+
+	// next instruction.
+	c.pc = temp + 1
 	return 0
 }
 

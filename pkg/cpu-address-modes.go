@@ -48,6 +48,7 @@ func (c *CPU) ABS() uint8 {
 	c.addrAbs = (hi << 8) | lo
 	return 0
 }
+
 func (c *CPU) ABX() uint8 {
 	lo := uint16(c.read(c.pc))
 	c.pc++

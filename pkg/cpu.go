@@ -92,11 +92,16 @@ type CPU struct {
 	cycles  uint8
 
 	lookup []Instruction
+
+	stackSnoop  []uint8
+	memorySnoop []uint8
 }
 
 func NewCPU(bus *Bus) *CPU {
 	c := &CPU{bus: bus}
 	c.lookup = c.generateLookup()
+	c.stackSnoop = c.bus.ram.ram[0x0100+240 : 0x0100+256]
+	c.memorySnoop = c.bus.ram.ram[0x8000 : 0x8000+40]
 	return c
 }
 
@@ -124,10 +129,12 @@ func (c *CPU) setFlag(f Flag, v bool) {
 func (c *CPU) Clock() {
 	if c.cycles == 0 {
 		opCode := c.read(c.pc)
+		fmt.Printf("OP: %s\n", c.lookup[opCode].name)
 		c.pc++
 		cycles := c.lookup[opCode].cycles
 		additionalCycle1 := c.lookup[opCode].addr()
 		additionalCycle2 := c.lookup[opCode].op()
+
 		cycles += (additionalCycle1 & additionalCycle2)
 		c.dump()
 	}
