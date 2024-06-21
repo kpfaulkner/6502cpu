@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"reflect"
 )
 
 type Flag uint8
@@ -70,7 +69,7 @@ const (
 type Instruction struct {
 	name   string
 	op     func() uint8
-	addr   func() uint8
+	addr   func() (uint8, addrMode)
 	cycles uint8
 }
 
@@ -132,7 +131,7 @@ func (c *CPU) Clock() {
 		fmt.Printf("OP: %s\n", c.lookup[opCode].name)
 		c.pc++
 		cycles := c.lookup[opCode].cycles
-		additionalCycle1 := c.lookup[opCode].addr()
+		additionalCycle1, _ := c.lookup[opCode].addr()
 		additionalCycle2 := c.lookup[opCode].op()
 
 		cycles += (additionalCycle1 & additionalCycle2)
@@ -200,7 +199,8 @@ func (c *CPU) nmi() {
 // FIXME(kpfaulkner) REALLY hate the use of reflection here.
 func (c *CPU) fetch() uint8 {
 
-	if reflect.ValueOf(c.lookup[c.opCode].addr).Pointer() != reflect.ValueOf(c.IMP).Pointer() {
+	_, addrMode := c.lookup[c.opCode].addr()
+	if addrMode == IMP {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched

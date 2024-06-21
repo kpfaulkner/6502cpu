@@ -310,15 +310,45 @@ func (c *CPU) LDY() uint8 {
 	return 0
 }
 
+// LSR: Logical Shift Right
+// if implied addressing mode, then we're just shifting the accumulator right one bit.
 func (c *CPU) LSR() uint8 {
+	c.fetch()
+
+	// if LSB is 1, set carry flag.
+	if c.fetched&0x0001 > 0 {
+		c.setFlag(C, true)
+	} else {
+		c.setFlag(C, false)
+	}
+
+	temp := c.fetched >> 1
+	c.setFlag(Z, (temp&0x00FF) == 0)
+
+	// if MSB is 1 of the byte, set N flag.
+	c.setFlag(N, temp&0x80 > 0)
+
+	_, addrMode := c.lookup[c.opCode].addr()
+
+	// if implied mode, then just set A
+	if addrMode == IMP {
+		c.a = temp & 0x00FF
+	} else {
+		c.write(c.addrAbs, temp&0x00FF)
+	}
+
 	return 0
 }
+
 func (c *CPU) NOP() uint8 {
 	return 0
 }
+
 func (c *CPU) ORA() uint8 {
+	panic("ORA")
 	return 0
 }
+
 func (c *CPU) PHA() uint8 {
 	c.write(0x0100+uint16(c.stkp), c.a)
 	c.stkp--
@@ -454,7 +484,7 @@ func (c *CPU) XXX() uint8 {
 	return 0
 }
 
-func addInstruction(name string, op func() uint8, addr func() uint8, cycles uint8) Instruction {
+func addInstruction(name string, op func() uint8, addr func() (uint8, addrMode), cycles uint8) Instruction {
 	i := Instruction{
 		name:   name,
 		op:     op,
