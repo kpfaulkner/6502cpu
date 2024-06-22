@@ -1,5 +1,7 @@
 package pkg
 
+import "time"
+
 // opcodes
 func (c *CPU) ADC() uint8 {
 
@@ -144,6 +146,8 @@ func (c *CPU) BRK() uint8 {
 	c.setFlag(B, false)
 	c.pc = uint16(c.read(0xFFFE)) | (uint16(c.read(0xFFFF)) << 8)
 
+	// just pause here... so we can look at stuff?
+	time.Sleep(10000 * time.Second)
 	return 0
 }
 
@@ -233,6 +237,12 @@ func (c *CPU) CPY() uint8 {
 }
 
 func (c *CPU) DEC() uint8 {
+	c.fetch()
+	temp := c.fetched - 1
+	c.write(c.addrAbs, temp&0x00FF)
+	c.setFlag(Z, (temp&0x00FF) == 0x00)
+	c.setFlag(N, temp&0x80 > 0)
+
 	return 0
 }
 func (c *CPU) DEX() uint8 {
@@ -252,10 +262,16 @@ func (c *CPU) DEY() uint8 {
 }
 
 func (c *CPU) EOR() uint8 {
+	panic("EOR")
 	return 0
 }
 
 func (c *CPU) INC() uint8 {
+	c.fetch()
+	temp := c.fetched + 1
+	c.write(c.addrAbs, temp&0x00FF)
+	c.setFlag(Z, temp == 0x00)
+	c.setFlag(N, temp&0x80 > 0)
 	return 0
 }
 
@@ -351,7 +367,16 @@ func (c *CPU) LSR() uint8 {
 }
 
 func (c *CPU) NOP() uint8 {
-	panic("NOP")
+	switch c.opCode {
+	case 0x1C:
+	case 0x3C:
+	case 0x5C:
+	case 0x7C:
+	case 0xDC:
+	case 0xFC:
+		return 1
+		break
+	}
 	return 0
 }
 
@@ -371,6 +396,7 @@ func (c *CPU) PHA() uint8 {
 }
 
 func (c *CPU) PHP() uint8 {
+	panic("PHP")
 	return 0
 }
 func (c *CPU) PLA() uint8 {
@@ -381,13 +407,43 @@ func (c *CPU) PLA() uint8 {
 	return 0
 }
 func (c *CPU) PLP() uint8 {
+	panic("PLP")
 	return 0
 }
 func (c *CPU) ROL() uint8 {
+	c.fetch()
+	var v uint16
+	if c.getFlag(C) {
+		v = 1
+	}
+	temp := uint16(c.fetched<<1) | v
+	c.setFlag(C, temp&0xFF00 > 0)
+	c.setFlag(Z, (temp&0x00FF) == 0)
+	c.setFlag(N, temp&0x80 > 0)
+	if c.addrMode == IMP {
+		c.a = uint8(temp & 0x00FF)
+	} else {
+		c.write(c.addrAbs, uint8(temp&0x00FF))
+
+	}
 	return 0
 }
 
 func (c *CPU) ROR() uint8 {
+	c.fetch()
+	var v uint16
+	if c.getFlag(C) {
+		v = 0x80
+	}
+	temp := v | uint16(c.fetched>>1)
+	c.setFlag(C, c.fetched&0x01 > 0)
+	c.setFlag(Z, (temp&0x00FF) == 0)
+	c.setFlag(N, temp&0x80 > 0)
+	if c.addrMode == IMP {
+		c.a = uint8(temp & 0x00FF)
+	} else {
+		c.write(c.addrAbs, uint8(temp&0x00FF))
+	}
 	return 0
 }
 func (c *CPU) RTI() uint8 {
@@ -437,14 +493,18 @@ func (c *CPU) SBC() uint8 {
 }
 
 func (c *CPU) SEC() uint8 {
+	c.setFlag(C, true)
 	return 0
 }
 func (c *CPU) SED() uint8 {
+	c.setFlag(D, true)
 	return 0
 }
 func (c *CPU) SEI() uint8 {
+	c.setFlag(I, true)
 	return 0
 }
+
 func (c *CPU) STA() uint8 {
 	c.bus.Write(c.addrAbs, c.a)
 	return 0
@@ -456,6 +516,7 @@ func (c *CPU) STX() uint8 {
 	return 0
 }
 func (c *CPU) STY() uint8 {
+	panic("STY")
 	return 0
 }
 
@@ -476,6 +537,7 @@ func (c *CPU) TAY() uint8 {
 }
 
 func (c *CPU) TSX() uint8 {
+	panic("TSX")
 	return 0
 }
 func (c *CPU) TXA() uint8 {
@@ -485,6 +547,8 @@ func (c *CPU) TXA() uint8 {
 	return 0
 }
 func (c *CPU) TXS() uint8 {
+
+	c.stkp = c.x
 	return 0
 }
 func (c *CPU) TYA() uint8 {
@@ -496,6 +560,7 @@ func (c *CPU) TYA() uint8 {
 
 // illegal
 func (c *CPU) XXX() uint8 {
+	panic("XXX")
 	return 0
 }
 

@@ -22,18 +22,20 @@ func main() {
 
 	//data, err := os.ReadFile("data/6502-JSR-RTS-8000-offset.bin")
 	//data, err := os.ReadFile("data/nestest.nes")
-	data, err := os.ReadFile("data/bubblesort.bin")
+	data, err := os.ReadFile("data/6502-primes.bin")
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
-	loadBinaryAtMemoryLocation(bus, 0x02A7, data)
+	startAddr := uint16(0xE000)
+
+	loadBinaryAtMemoryLocation(bus, startAddr, data)
 	//loadBinaryAtMemoryLocation(bus, 0x0000, data)
 
 	// reset vector
-	bus.Write(0xFFFC, 0xA7)
-	bus.Write(0xFFFD, 0x02)
+	bus.Write(0xFFFC, uint8(startAddr&0x00FF))
+	bus.Write(0xFFFD, uint8((startAddr>>8)&0x00FF))
 
 	//bus.Write(0xFFFC, 0x00)
 	//bus.Write(0xFFFD, 0x00)
