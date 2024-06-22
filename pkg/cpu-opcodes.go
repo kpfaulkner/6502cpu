@@ -76,6 +76,12 @@ func (c *CPU) BEQ() uint8 {
 }
 
 func (c *CPU) BIT() uint8 {
+
+	c.fetch()
+	temp := c.a & c.fetched
+	c.setFlag(Z, (temp&0x00FF) == 0)
+	c.setFlag(N, (c.fetched&(1<<7)) > 0)
+	c.setFlag(V, (c.fetched&(1<<6)) > 0)
 	return 0
 }
 
@@ -136,7 +142,7 @@ func (c *CPU) BRK() uint8 {
 	c.write(0x0100+uint16(c.stkp), uint8(c.status))
 	c.stkp--
 	c.setFlag(B, false)
-	c.pc = uint16(c.read(0xFFFE)) | uint16(c.read(0xFFFF))<<8
+	c.pc = uint16(c.read(0xFFFE)) | (uint16(c.read(0xFFFF)) << 8)
 
 	return 0
 }
@@ -193,7 +199,13 @@ func (c *CPU) CLV() uint8 {
 }
 
 func (c *CPU) CMP() uint8 {
-	return 0
+
+	c.fetch()
+	temp := uint16(c.a) - uint16(c.fetched)
+	c.setFlag(C, c.a >= c.fetched)
+	c.setFlag(Z, temp&0x00FF == 0) // check.
+	c.setFlag(N, temp&0x80 > 0)
+	return 1
 }
 
 // CPX: Compare memory and index X
@@ -328,10 +340,8 @@ func (c *CPU) LSR() uint8 {
 	// if MSB is 1 of the byte, set N flag.
 	c.setFlag(N, temp&0x80 > 0)
 
-	_, addrMode := c.lookup[c.opCode].addr()
-
 	// if implied mode, then just set A
-	if addrMode == IMP {
+	if c.addrMode == IMP {
 		c.a = temp & 0x00FF
 	} else {
 		c.write(c.addrAbs, temp&0x00FF)
@@ -341,11 +351,16 @@ func (c *CPU) LSR() uint8 {
 }
 
 func (c *CPU) NOP() uint8 {
+	panic("NOP")
 	return 0
 }
 
 func (c *CPU) ORA() uint8 {
-	panic("ORA")
+
+	c.fetch()
+	c.a = c.a | c.fetched
+	c.setFlag(Z, c.a == 0x00)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 0
 }
 

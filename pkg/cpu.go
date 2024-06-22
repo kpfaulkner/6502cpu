@@ -85,10 +85,12 @@ type CPU struct {
 
 	fetched uint8
 
-	addrAbs uint16
-	addrRel uint16
-	opCode  uint8
-	cycles  uint8
+	// current AddressMode
+	addrMode addrMode
+	addrAbs  uint16
+	addrRel  uint16
+	opCode   uint8
+	cycles   uint8
 
 	lookup []Instruction
 
@@ -100,7 +102,7 @@ func NewCPU(bus *Bus) *CPU {
 	c := &CPU{bus: bus}
 	c.lookup = c.generateLookup()
 	c.stackSnoop = c.bus.ram.ram[0x0100+240 : 0x0100+256]
-	c.memorySnoop = c.bus.ram.ram[0x8000 : 0x8000+40]
+	c.memorySnoop = c.bus.ram.ram[0xC000 : 0xC000+40]
 	return c
 }
 
@@ -131,7 +133,8 @@ func (c *CPU) Clock() {
 		fmt.Printf("OP: %s\n", c.lookup[opCode].name)
 		c.pc++
 		cycles := c.lookup[opCode].cycles
-		additionalCycle1, _ := c.lookup[opCode].addr()
+		additionalCycle1, addrMode := c.lookup[opCode].addr()
+		c.addrMode = addrMode
 		additionalCycle2 := c.lookup[opCode].op()
 
 		cycles += (additionalCycle1 & additionalCycle2)
@@ -199,8 +202,7 @@ func (c *CPU) nmi() {
 // FIXME(kpfaulkner) REALLY hate the use of reflection here.
 func (c *CPU) fetch() uint8 {
 
-	_, addrMode := c.lookup[c.opCode].addr()
-	if addrMode == IMP {
+	if c.addrMode != IMP {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched
