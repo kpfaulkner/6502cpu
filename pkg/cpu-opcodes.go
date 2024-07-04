@@ -1,6 +1,9 @@
 package pkg
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // opcodes
 func (c *CPU) ADC() uint8 {
@@ -262,7 +265,10 @@ func (c *CPU) DEY() uint8 {
 }
 
 func (c *CPU) EOR() uint8 {
-	panic("EOR")
+	c.fetch()
+	c.a = c.a ^ c.fetched
+	c.setFlag(Z, c.a == 0x00)
+	c.setFlag(N, c.a&0x80 > 0)
 	return 0
 }
 
@@ -312,6 +318,15 @@ func (c *CPU) JSR() uint8 {
 
 	// now PC is where the absolute address is set.
 	c.pc = c.addrAbs
+	return 0
+}
+
+func (c *CPU) LAX() uint8 {
+	c.fetch()
+	c.a = c.fetched
+	c.x = c.fetched
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 
@@ -396,7 +411,10 @@ func (c *CPU) PHA() uint8 {
 }
 
 func (c *CPU) PHP() uint8 {
-	panic("PHP")
+	c.write(0x0100+uint16(c.stkp), uint8(c.status|B|U))
+	c.setFlag(B, false)
+	c.setFlag(U, false)
+	c.stkp--
 	return 0
 }
 func (c *CPU) PLA() uint8 {
@@ -407,7 +425,9 @@ func (c *CPU) PLA() uint8 {
 	return 0
 }
 func (c *CPU) PLP() uint8 {
-	panic("PLP")
+	c.stkp++
+	c.status = Flag(c.read(0x0100 + uint16(c.stkp)))
+	c.setFlag(U, true)
 	return 0
 }
 func (c *CPU) ROL() uint8 {
@@ -474,6 +494,13 @@ func (c *CPU) RTS() uint8 {
 	return 0
 }
 
+func (c *CPU) SAX() uint8 {
+
+	temp := c.a ^ c.x
+	c.bus.Write(c.addrAbs, temp)
+	return 0
+}
+
 func (c *CPU) SBC() uint8 {
 	c.fetch()
 
@@ -487,7 +514,8 @@ func (c *CPU) SBC() uint8 {
 	c.setFlag(C, temp > 255)
 	c.setFlag(Z, (temp&0x00FF) == 0)
 	c.setFlag(N, temp&0x80 > 0)
-	c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) > 0)
+	//c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) > 0)
+	c.setFlag(V, ((temp^uint16(c.a))&(temp^value)&0x0080) > 0)
 	c.a = uint8(temp & 0x00FF)
 	return 1
 }
@@ -515,8 +543,9 @@ func (c *CPU) STX() uint8 {
 	c.bus.Write(c.addrAbs, c.x)
 	return 0
 }
+
 func (c *CPU) STY() uint8 {
-	panic("STY")
+	c.write(c.addrAbs, c.y)
 	return 0
 }
 
@@ -537,7 +566,9 @@ func (c *CPU) TAY() uint8 {
 }
 
 func (c *CPU) TSX() uint8 {
-	panic("TSX")
+	c.x = c.stkp
+	c.setFlag(Z, c.x == 0x00)
+	c.setFlag(N, c.x&0x80 > 0)
 	return 0
 }
 func (c *CPU) TXA() uint8 {
@@ -560,7 +591,8 @@ func (c *CPU) TYA() uint8 {
 
 // illegal
 func (c *CPU) XXX() uint8 {
-	panic("XXX")
+	//panic("XXX")
+	fmt.Printf("XXXXXXXXXXXXX\n")
 	return 0
 }
 
@@ -707,11 +739,11 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 2))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("SAX", c.SAX, c.IND, 6))
 	lookup = append(lookup, addInstruction("STY", c.STY, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("STX", c.STX, c.ZP0, 3))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 3))
+	lookup = append(lookup, addInstruction("SAX", c.SAX, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("DEY", c.DEY, c.IMP, 2))
 	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 2))
 	lookup = append(lookup, addInstruction("TXA", c.TXA, c.IMP, 2))
@@ -719,7 +751,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("STY", c.STY, c.ABS, 4))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.ABS, 4))
 	lookup = append(lookup, addInstruction("STX", c.STX, c.ABS, 4))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 4))
+	lookup = append(lookup, addInstruction("SAX", c.SAX, c.ABS, 4))
 	lookup = append(lookup, addInstruction("BCC", c.BCC, c.REL, 2))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.IZY, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
@@ -727,7 +759,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("STY", c.STY, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("STX", c.STX, c.ZPY, 4))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 4))
+	lookup = append(lookup, addInstruction("SAX", c.SAX, c.ZPY, 4))
 	lookup = append(lookup, addInstruction("TYA", c.TYA, c.IMP, 2))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.ABY, 5))
 	lookup = append(lookup, addInstruction("TXS", c.TXS, c.IMP, 2))
@@ -739,15 +771,15 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("LDY", c.LDY, c.IMM, 2))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.IZX, 6))
 	lookup = append(lookup, addInstruction("LDX", c.LDX, c.IMM, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.IND, 6))
 	lookup = append(lookup, addInstruction("LDY", c.LDY, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("LDX", c.LDX, c.ZP0, 3))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 3))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("TAY", c.TAY, c.IMP, 2))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.IMM, 2))
 	lookup = append(lookup, addInstruction("TAX", c.TAX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.ABS, 4))
 	lookup = append(lookup, addInstruction("LDY", c.LDY, c.ABS, 4))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.ABS, 4))
 	lookup = append(lookup, addInstruction("LDX", c.LDX, c.ABS, 4))
@@ -755,11 +787,11 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("BCS", c.BCS, c.REL, 2))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.IZY, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.IND, 5))
 	lookup = append(lookup, addInstruction("LDY", c.LDY, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("LDX", c.LDX, c.ZPY, 4))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 4))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.ZPY, 4)) // added NOP instead of invalid? (EA?)
 	lookup = append(lookup, addInstruction("CLV", c.CLV, c.IMP, 2))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.ABY, 4))
 	lookup = append(lookup, addInstruction("TSX", c.TSX, c.IMP, 2))
@@ -767,7 +799,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("LDY", c.LDY, c.ABX, 4))
 	lookup = append(lookup, addInstruction("LDA", c.LDA, c.ABX, 4))
 	lookup = append(lookup, addInstruction("LDX", c.LDX, c.ABY, 4))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 4))
+	lookup = append(lookup, addInstruction("LAX", c.LAX, c.ABY, 4))
 	lookup = append(lookup, addInstruction("CPY", c.CPY, c.IMM, 2))
 	lookup = append(lookup, addInstruction("CMP", c.CMP, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 2))

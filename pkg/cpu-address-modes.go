@@ -51,7 +51,7 @@ func (c *CPU) ZPY() (uint8, addrMode) {
 func (c *CPU) REL() (uint8, addrMode) {
 	c.addrRel = uint16(c.read(c.pc))
 	c.pc++
-	if c.addrRel&0x80 != 0 {
+	if c.addrRel&0x80 > 0 {
 		c.addrRel |= 0xFF00
 	}
 	return 0, REL

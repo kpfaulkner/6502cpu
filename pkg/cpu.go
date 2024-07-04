@@ -96,6 +96,8 @@ type CPU struct {
 
 	stackSnoop  []uint8
 	memorySnoop []uint8
+
+	debugStr string
 }
 
 func NewCPU(bus *Bus) *CPU {
@@ -127,18 +129,25 @@ func (c *CPU) setFlag(f Flag, v bool) {
 	}
 }
 
+var numOps = 0
+
 func (c *CPU) Clock() {
 	if c.cycles == 0 {
+		c.debugStr = fmt.Sprintf("%04X ", c.pc)
+		numOps++
 		opCode := c.read(c.pc)
-		fmt.Printf("OP: %s\n", c.lookup[opCode].name)
+		c.debugStr = fmt.Sprintf("%s %02X ", c.debugStr, opCode)
+		//fmt.Printf("OP: %s (raw %2X)\n", c.lookup[opCode].name, opCode)
 		c.pc++
 		cycles := c.lookup[opCode].cycles
 		additionalCycle1, addrMode := c.lookup[opCode].addr()
 		c.addrMode = addrMode
 		additionalCycle2 := c.lookup[opCode].op()
 
+		c.debugStr = fmt.Sprintf("%s abs: %04X rel: %04X", c.debugStr, c.addrAbs, c.addrRel)
 		cycles += (additionalCycle1 & additionalCycle2)
-		c.dump()
+		// fmt.Printf("num ops %d\n", numOps)
+		fmt.Printf("%s %s\n", c.debugStr, c.generateRegisterStrings())
 	}
 	c.cycles--
 }
@@ -209,6 +218,6 @@ func (c *CPU) fetch() uint8 {
 }
 
 // dump internals out to stdout
-func (c *CPU) dump() {
-	fmt.Printf("A %02x X %02x Y %02x STKP %02x PC %04x Flag %s\n", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
+func (c *CPU) generateRegisterStrings() string {
+	return fmt.Sprintf("A:%02X X:%02X Y:%02X STKP:%02X PC:%04X Flag:%s\n", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
 }

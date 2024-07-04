@@ -21,14 +21,16 @@ func main() {
 	bus.Connect(cpu)
 
 	//data, err := os.ReadFile("data/6502-JSR-RTS-8000-offset.bin")
-	//data, err := os.ReadFile("data/nestest.nes")
-	data, err := os.ReadFile("data/6502-primes.bin")
+	data, err := os.ReadFile("data/nestest.nes")
+	// skip over first 16 bytes (NES header info afaik)
+	data = data[16:]
+	//data, err := os.ReadFile("data/6502-primes.bin")
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
-	startAddr := uint16(0xE000)
+	startAddr := uint16(0xC000)
 
 	loadBinaryAtMemoryLocation(bus, startAddr, data)
 	//loadBinaryAtMemoryLocation(bus, 0x0000, data)
