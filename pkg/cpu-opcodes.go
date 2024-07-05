@@ -33,6 +33,17 @@ func (c *CPU) AND() uint8 {
 }
 
 func (c *CPU) ASL() uint8 {
+
+	c.fetch()
+	temp := uint16(c.fetched) << 1
+	c.setFlag(C, (temp&0xFF00) > 0)
+	c.setFlag(Z, (temp&0x00FF) == 0)
+	c.setFlag(N, temp&0x80 > 0)
+	if c.addrMode == IMP {
+		c.a = uint8(temp & 0x00FF)
+	} else {
+		c.write(c.addrAbs, uint8(temp&0x00FF))
+	}
 	return 0
 }
 
@@ -333,24 +344,25 @@ func (c *CPU) LAX() uint8 {
 func (c *CPU) LDA() uint8 {
 	c.fetch()
 	c.a = c.fetched
-	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 > 0)
-	return 0
+	c.setFlag(Z, c.a == 0x00)
+	c.setFlag(N, c.a&0x80 > 0)
+	return 1
 }
+
 func (c *CPU) LDX() uint8 {
 	c.fetch()
 	c.x = c.fetched
 	c.setFlag(Z, c.x == 0x00)
 	c.setFlag(N, c.x&0x80 > 0)
-	return 0
+	return 1
 }
 func (c *CPU) LDY() uint8 {
 
 	c.fetch()
 	c.y = c.fetched
-	c.setFlag(Z, c.x == 0x00)
-	c.setFlag(N, c.x&0x80 > 0)
-	return 0
+	c.setFlag(Z, c.y == 0x00)
+	c.setFlag(N, c.y&0x80 > 0)
+	return 1
 }
 
 // LSR: Logical Shift Right
@@ -382,6 +394,7 @@ func (c *CPU) LSR() uint8 {
 }
 
 func (c *CPU) NOP() uint8 {
+	c.fetch()
 	switch c.opCode {
 	case 0x1C:
 	case 0x3C:
@@ -436,7 +449,8 @@ func (c *CPU) ROL() uint8 {
 	if c.getFlag(C) {
 		v = 1
 	}
-	temp := uint16(c.fetched<<1) | v
+	temp := uint16(c.fetched) << 1
+	temp = temp | v
 	c.setFlag(C, temp&0xFF00 > 0)
 	c.setFlag(Z, (temp&0x00FF) == 0)
 	c.setFlag(N, temp&0x80 > 0)
@@ -612,7 +626,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("ORA", c.ORA, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
-	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 3))
+	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 3))
 	lookup = append(lookup, addInstruction("ORA", c.ORA, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("ASL", c.ASL, c.ZP0, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))
@@ -676,7 +690,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
-	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 3))
+	lookup = append(lookup, addInstruction("NOR", c.NOP, c.IMM, 3))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.ZP0, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))
@@ -708,7 +722,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
-	lookup = append(lookup, addInstruction("???", c.NOP, c.IMP, 3))
+	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 3))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.ZP0, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))

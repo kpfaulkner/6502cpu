@@ -86,18 +86,22 @@ type CPU struct {
 	fetched uint8
 
 	// current AddressMode
-	addrMode addrMode
-	addrAbs  uint16
-	addrRel  uint16
-	opCode   uint8
-	cycles   uint8
+	addrMode    addrMode
+	addrAbs     uint16
+	addrRel     uint16
+	opCode      uint8
+	cycles      uint8
+	totalCycles uint64
 
 	lookup []Instruction
 
 	stackSnoop  []uint8
 	memorySnoop []uint8
 
+	// just for debugging
 	debugStr string
+	lo       uint16
+	hi       uint16
 }
 
 func NewCPU(bus *Bus) *CPU {
@@ -133,21 +137,29 @@ var numOps = 0
 
 func (c *CPU) Clock() {
 	if c.cycles == 0 {
-		c.debugStr = fmt.Sprintf("%04X ", c.pc)
+		c.debugStr = fmt.Sprintf("%04X", c.pc)
+
+		if c.pc == 0xC6BF {
+			numOps--
+			numOps++
+		}
 		numOps++
 		opCode := c.read(c.pc)
-		c.debugStr = fmt.Sprintf("%s %02X ", c.debugStr, opCode)
+		c.opCode = opCode
+		c.debugStr = fmt.Sprintf("%s", c.debugStr)
 		//fmt.Printf("OP: %s (raw %2X)\n", c.lookup[opCode].name, opCode)
 		c.pc++
 		cycles := c.lookup[opCode].cycles
 		additionalCycle1, addrMode := c.lookup[opCode].addr()
 		c.addrMode = addrMode
-		additionalCycle2 := c.lookup[opCode].op()
 
-		c.debugStr = fmt.Sprintf("%s abs: %04X rel: %04X", c.debugStr, c.addrAbs, c.addrRel)
+		additionalCycle2 := c.lookup[opCode].op()
+		c.displayOperation()
+
 		cycles += (additionalCycle1 & additionalCycle2)
 		// fmt.Printf("num ops %d\n", numOps)
 		fmt.Printf("%s %s\n", c.debugStr, c.generateRegisterStrings())
+		c.totalCycles += uint64(cycles)
 	}
 	c.cycles--
 }
@@ -219,5 +231,51 @@ func (c *CPU) fetch() uint8 {
 
 // dump internals out to stdout
 func (c *CPU) generateRegisterStrings() string {
-	return fmt.Sprintf("A:%02X X:%02X Y:%02X STKP:%02X PC:%04X Flag:%s\n", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
+	return fmt.Sprintf("A:%02X X:%02X Y:%02X STKP:%02X PC:%04X Flag:%s", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
+}
+
+// should already have PC.
+func (c *CPU) displayOperation() {
+
+	argBytes := c.generateArgBytes()
+
+	c.debugStr = fmt.Sprintf("%s  %02X %s", c.debugStr, c.opCode, argBytes)
+
+	c.debugStr = fmt.Sprintf("%s ::: abs: %04X rel: %04X", c.debugStr, c.addrAbs, c.addrRel)
+}
+
+func (c *CPU) generateArgBytes() string {
+	switch c.addrMode {
+	case IMP:
+		return ""
+	case IMM:
+		return fmt.Sprintf("%02X", c.fetched)
+	case ZP0:
+		return fmt.Sprintf("%02X", c.addrAbs)
+	case ZPX:
+		data := c.read(c.pc - 1)
+		return fmt.Sprintf("%02X", data)
+	case ZPY:
+		data := c.read(c.pc - 1)
+		return fmt.Sprintf("%02X", data)
+	case REL:
+		return fmt.Sprintf("%02X", c.addrRel)
+	case ABS:
+		return fmt.Sprintf("%02X %02X", c.addrAbs&0x00FF, (c.addrAbs>>8)&0x00FF)
+
+	case ABX:
+		return fmt.Sprintf("%02X %02X", c.lo, c.hi)
+	case ABY:
+		return fmt.Sprintf("%02X %02X", c.lo, c.hi)
+	case IND:
+		return fmt.Sprintf("%02X %02X", c.lo, c.hi)
+	case IZX:
+		t := uint16(c.read(c.pc - 1))
+		return fmt.Sprintf("%02X", t)
+	case IZY:
+		t := uint16(c.read(c.pc - 1))
+		return fmt.Sprintf("%02X", t)
+
+	}
+	return "UNKNOWN"
 }

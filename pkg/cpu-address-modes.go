@@ -35,7 +35,8 @@ func (c *CPU) ZP0() (uint8, addrMode) {
 }
 
 func (c *CPU) ZPX() (uint8, addrMode) {
-	c.addrAbs = uint16(c.read(c.pc) + c.x)
+	data := c.read(c.pc)
+	c.addrAbs = uint16(data + c.x)
 	c.pc++
 	c.addrAbs &= 0x00FF
 	return 0, ZPX
@@ -73,7 +74,8 @@ func (c *CPU) ABX() (uint8, addrMode) {
 	c.pc++
 	c.addrAbs = (hi << 8) | lo
 	c.addrAbs += uint16(c.x)
-
+	c.lo = lo
+	c.hi = hi
 	if (c.addrAbs & 0xFF00) != (hi << 8) {
 		return 1, ABX
 	} else {
@@ -89,6 +91,8 @@ func (c *CPU) ABY() (uint8, addrMode) {
 	c.addrAbs = (hi << 8) | lo
 	c.addrAbs += uint16(c.y)
 
+	c.lo = lo
+	c.hi = hi
 	if (c.addrAbs & 0xFF00) != (hi << 8) {
 		return 1, ABY
 	} else {
@@ -108,6 +112,8 @@ func (c *CPU) IND() (uint8, addrMode) {
 	} else {
 		c.addrAbs = (uint16(c.read(ptr+1)) << 8) | uint16(c.read(ptr+0))
 	}
+	c.lo = lo
+	c.hi = hi
 	return 0, IND
 }
 
