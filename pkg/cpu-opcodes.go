@@ -548,6 +548,12 @@ func (c *CPU) RTI() uint8 {
 	return 0
 }
 
+func (c *CPU) RRA() uint8 {
+	c.ROR()
+	c.ADC()
+	return 0
+}
+
 // RTS: restore pc from the stack.
 func (c *CPU) RTS() uint8 {
 
@@ -606,6 +612,12 @@ func (c *CPU) SEI() uint8 {
 func (c *CPU) SLO() uint8 {
 	c.ASL()
 	c.ORA()
+	return 0
+}
+
+func (c *CPU) SRE() uint8 {
+	c.LSR()
+	c.EOR()
 	return 0
 }
 
@@ -761,11 +773,11 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("RTI", c.RTI, c.IMP, 6))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.IZX, 8))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.ZP0, 5))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.ZP0, 5))
 	lookup = append(lookup, addInstruction("PHA", c.PHA, c.IMP, 3))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.IMM, 2))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.IMP, 2))
@@ -773,35 +785,35 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("JMP", c.JMP, c.ABS, 3))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ABS, 4))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.ABS, 6))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.ABS, 6))
 
 	// 5
 	lookup = append(lookup, addInstruction("BVC", c.BVC, c.REL, 2))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.IZY, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.IZY, 8))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.ZPX, 6))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.ZPX, 6))
 	lookup = append(lookup, addInstruction("CLI", c.CLI, c.IMP, 2))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ABY, 4))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 7))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.ABY, 7))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ABX, 4))
 	lookup = append(lookup, addInstruction("EOR", c.EOR, c.ABX, 4))
 	lookup = append(lookup, addInstruction("LSR", c.LSR, c.ABX, 7))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 7))
+	lookup = append(lookup, addInstruction("SRE", c.SRE, c.ABX, 7))
 
 	// 6
 	lookup = append(lookup, addInstruction("RTS", c.RTS, c.IMP, 6))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.IZX, 6))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.IZX, 8))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.ZP0, 5))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 5))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.ZP0, 5))
 	lookup = append(lookup, addInstruction("PLA", c.PLA, c.IMP, 4))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.IMM, 2))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.IMP, 2))
@@ -809,25 +821,25 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("JMP", c.JMP, c.IND, 5))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ABS, 4))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.ABS, 6))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.ABS, 6))
 
 	// 7
 	lookup = append(lookup, addInstruction("BVS", c.BVS, c.REL, 2))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.IZY, 5))
 	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.IZY, 8))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ZPX, 4))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.ZPX, 6))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 6))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.ZPX, 6))
 	lookup = append(lookup, addInstruction("SEI", c.SEI, c.IMP, 2))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ABY, 4))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 7))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.ABY, 7))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.ABX, 4))
 	lookup = append(lookup, addInstruction("ADC", c.ADC, c.ABX, 4))
 	lookup = append(lookup, addInstruction("ROR", c.ROR, c.ABX, 7))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 7))
+	lookup = append(lookup, addInstruction("RRA", c.RRA, c.ABX, 7))
 
 	// 8
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 2))
