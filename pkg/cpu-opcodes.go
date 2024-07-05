@@ -250,6 +250,33 @@ func (c *CPU) CPY() uint8 {
 	return 0
 }
 
+func (c *CPU) DCP() uint8 {
+
+	c.fetch()
+	temp := uint16(c.fetched) - 1
+	c.write(c.addrAbs, uint8(temp&0x00FF))
+	temp2 := uint16(c.a) - temp
+	//c.setFlag(C, uint16(c.a) >= temp)
+
+	c.setFlag(C, uint16(c.a) >= temp2)
+	//c.setFlag(C, temp2&0xFF00 > 0)
+	c.setFlag(Z, (temp2&0x00FF) == 0x00)
+	c.setFlag(N, temp2&0x80 > 0)
+
+	return 0
+}
+
+func (c *CPU) DCP2() uint8 {
+	c.fetch()
+	temp := c.fetched - 1
+	c.write(c.addrAbs, temp&0x00FF)
+	c.setFlag(Z, (temp&0x00FF) == 0x00)
+	c.setFlag(N, temp&0x80 > 0)
+
+	c.setFlag(C, c.a >= temp)
+	return 0
+}
+
 func (c *CPU) DEC() uint8 {
 	c.fetch()
 	temp := c.fetched - 1
@@ -259,6 +286,7 @@ func (c *CPU) DEC() uint8 {
 
 	return 0
 }
+
 func (c *CPU) DEX() uint8 {
 	c.x--
 	c.setFlag(Z, c.x == 0x00)
@@ -510,7 +538,7 @@ func (c *CPU) RTS() uint8 {
 
 func (c *CPU) SAX() uint8 {
 
-	temp := c.a ^ c.x
+	temp := c.a & c.x
 	c.bus.Write(c.addrAbs, temp)
 	return 0
 }
@@ -525,7 +553,7 @@ func (c *CPU) SBC() uint8 {
 		carryBit = 1
 	}
 	temp := uint16(c.a) + value + carryBit
-	c.setFlag(C, temp > 255)
+	c.setFlag(C, temp&0xFF00 > 0)
 	c.setFlag(Z, (temp&0x00FF) == 0)
 	c.setFlag(N, temp&0x80 > 0)
 	//c.setFlag(V, (^(uint16(c.a)^uint16(c.fetched))&(uint16(c.a)^temp)&0x0080) > 0)
@@ -771,7 +799,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 2))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.IZX, 6))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 2))
-	lookup = append(lookup, addInstruction("SAX", c.SAX, c.IND, 6))
+	lookup = append(lookup, addInstruction("SAX", c.SAX, c.IZX, 6))
 	lookup = append(lookup, addInstruction("STY", c.STY, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("STA", c.STA, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("STX", c.STX, c.ZP0, 3))
@@ -843,7 +871,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("CPY", c.CPY, c.IMM, 2))
 	lookup = append(lookup, addInstruction("CMP", c.CMP, c.IZX, 6))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMM, 2))
-	lookup = append(lookup, addInstruction("???", c.XXX, c.IMP, 8))
+	lookup = append(lookup, addInstruction("DCP", c.DCP, c.IZX, 8))
 	lookup = append(lookup, addInstruction("CPY", c.CPY, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("CMP", c.CMP, c.ZP0, 3))
 	lookup = append(lookup, addInstruction("DEC", c.DEC, c.ZP0, 5))
@@ -887,7 +915,7 @@ func (c *CPU) generateLookup() []Instruction {
 	lookup = append(lookup, addInstruction("INX", c.INX, c.IMP, 2))
 	lookup = append(lookup, addInstruction("SBC", c.SBC, c.IMM, 2))
 	lookup = append(lookup, addInstruction("NOP", c.NOP, c.IMP, 2))
-	lookup = append(lookup, addInstruction("???", c.SBC, c.IMP, 2))
+	lookup = append(lookup, addInstruction("SBC", c.SBC, c.IMM, 2))
 	lookup = append(lookup, addInstruction("CPX", c.CPX, c.ABS, 4))
 	lookup = append(lookup, addInstruction("SBC", c.SBC, c.ABS, 4))
 	lookup = append(lookup, addInstruction("INC", c.INC, c.ABS, 6))
