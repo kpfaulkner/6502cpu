@@ -139,7 +139,7 @@ func (c *CPU) Clock() {
 	if c.cycles == 0 {
 		c.debugStr = fmt.Sprintf("%04X", c.pc)
 
-		if c.pc == 0xE949 {
+		if c.pc == 0xEF68 {
 			numOps--
 			numOps++
 		}
