@@ -6,7 +6,9 @@ No original thought from me :L)
 
 ## Notes
 
-The nestest runs successfully! (https://github.com/christopherpow/nes-test-roms/blob/master/other/nestest.nes)
+The nestest completes (https://github.com/christopherpow/nes-test-roms/blob/master/other/nestest.nes) as in all operations
+in the correct order are executed. Checks for the registers/flags not performed yet (but the fact the ops complete is a good 
+indication)
 
 16 bit address bus
 8 bit data bus
