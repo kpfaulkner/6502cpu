@@ -1,10 +1,12 @@
 # 6502 emulator
 
 Just for fun.
-This is ALL based off https://www.youtube.com/watch?v=8XmxKPJDGU0
+This is 95% based off https://www.youtube.com/watch?v=8XmxKPJDGU0
 No original thought from me :L)
 
 ## Notes
+
+The nestest runs successfully! (https://github.com/christopherpow/nes-test-roms/blob/master/other/nestest.nes)
 
 16 bit address bus
 8 bit data bus
