@@ -139,7 +139,7 @@ func (c *CPU) Clock() {
 	if c.cycles == 0 {
 		c.debugStr = fmt.Sprintf("%04X", c.pc)
 
-		if c.pc == 0xC6BF {
+		if c.pc == 0xE545 {
 			numOps--
 			numOps++
 		}
@@ -259,7 +259,7 @@ func (c *CPU) generateArgBytes() string {
 		data := c.read(c.pc - 1)
 		return fmt.Sprintf("%02X", data)
 	case REL:
-		return fmt.Sprintf("%02X", c.addrRel)
+		return fmt.Sprintf("%02X", c.addrRel&0x00FF)
 	case ABS:
 		return fmt.Sprintf("%02X %02X", c.addrAbs&0x00FF, (c.addrAbs>>8)&0x00FF)
 
