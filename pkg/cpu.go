@@ -143,10 +143,6 @@ func (c *CPU) Clock() {
 		c.setFlag(I, true)
 		c.debugStr = fmt.Sprintf("%04X", c.pc)
 
-		if c.pc == 0xC825 {
-			numOps--
-			numOps++
-		}
 		numOps++
 		opCode := c.read(c.pc)
 		c.opCode = opCode

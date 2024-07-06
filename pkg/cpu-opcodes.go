@@ -386,7 +386,7 @@ func (c *CPU) LAX() uint8 {
 	c.x = c.fetched
 	c.setFlag(Z, c.x == 0x00)
 	c.setFlag(N, c.x&0x80 > 0)
-	return 0
+	return 1
 }
 
 func (c *CPU) LDA() uint8 {
@@ -444,14 +444,8 @@ func (c *CPU) LSR() uint8 {
 func (c *CPU) NOP() uint8 {
 	c.fetch()
 	switch c.opCode {
-	case 0x1C:
-	case 0x3C:
-	case 0x5C:
-	case 0x7C:
-	case 0xDC:
-	case 0xFC:
+	case 0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC:
 		return 1
-		break
 	}
 	return 0
 }
@@ -489,6 +483,11 @@ func (c *CPU) PLP() uint8 {
 	c.stkp++
 	c.status = Flag(c.read(0x0100 + uint16(c.stkp)))
 	c.setFlag(U, true)
+
+	// HACK...  always getting B flag set... but tests show it shouldn't be.
+	// FIXME(kpfaulkner) remove back
+	c.setFlag(B, false)
+
 	return 0
 }
 
