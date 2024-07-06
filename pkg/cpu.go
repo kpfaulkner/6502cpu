@@ -137,9 +137,13 @@ var numOps = 0
 
 func (c *CPU) Clock() {
 	if c.cycles == 0 {
+
+		// always set unused and disable interrupts to true for nestest.
+		c.setFlag(U, true)
+		c.setFlag(I, true)
 		c.debugStr = fmt.Sprintf("%04X", c.pc)
 
-		if c.pc == 0xEF68 {
+		if c.pc == 0xC825 {
 			numOps--
 			numOps++
 		}
@@ -149,17 +153,26 @@ func (c *CPU) Clock() {
 		c.debugStr = fmt.Sprintf("%s", c.debugStr)
 		//fmt.Printf("OP: %s (raw %2X)\n", c.lookup[opCode].name, opCode)
 		c.pc++
-		cycles := c.lookup[opCode].cycles
+		c.cycles = c.lookup[opCode].cycles
 		additionalCycle1, addrMode := c.lookup[opCode].addr()
 		c.addrMode = addrMode
 
-		additionalCycle2 := c.lookup[opCode].op()
-		c.displayOperation()
+		regString := c.generateRegisterStrings(c.status)
 
-		cycles += (additionalCycle1 & additionalCycle2)
+		additionalCycle2 := c.lookup[opCode].op()
+		//c.displayOperation()
+		c.displayOperation()
+		fmt.Printf("%-16s%sCYC:%d\n", c.debugStr, regString, c.totalCycles)
+
+		c.cycles += (additionalCycle1 & additionalCycle2)
 		// fmt.Printf("num ops %d\n", numOps)
-		fmt.Printf("%s %s\n", c.debugStr, c.generateRegisterStrings())
-		c.totalCycles += uint64(cycles)
+
+		c.totalCycles += uint64(c.cycles)
+
+		// always set unused and disable interrupts to true for nestest.
+		c.setFlag(U, true)
+		c.setFlag(I, true)
+
 	}
 	c.cycles--
 }
@@ -178,6 +191,7 @@ func (c *CPU) Reset() {
 	c.addrAbs = 0
 	c.fetched = 0
 	c.cycles = 8
+	c.totalCycles = 7
 
 }
 
@@ -230,8 +244,9 @@ func (c *CPU) fetch() uint8 {
 }
 
 // dump internals out to stdout
-func (c *CPU) generateRegisterStrings() string {
-	return fmt.Sprintf("A:%02X X:%02X Y:%02X STKP:%02X PC:%04X Flag:%s", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
+func (c *CPU) generateRegisterStrings(status Flag) string {
+	return fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X SP:%02X ", c.a, c.x, c.y, uint8(status), c.stkp)
+	//return fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X STKP:%02X PC:%04X Flag:%s", c.a, c.x, c.y, c.stkp, c.pc, c.status.String())
 }
 
 // should already have PC.
@@ -241,7 +256,7 @@ func (c *CPU) displayOperation() {
 
 	c.debugStr = fmt.Sprintf("%s  %02X %s", c.debugStr, c.opCode, argBytes)
 
-	c.debugStr = fmt.Sprintf("%s ::: abs: %04X rel: %04X", c.debugStr, c.addrAbs, c.addrRel)
+	//c.debugStr = fmt.Sprintf("%s ::: abs: %04X rel: %04X", c.debugStr, c.addrAbs, c.addrRel)
 }
 
 func (c *CPU) generateArgBytes() string {

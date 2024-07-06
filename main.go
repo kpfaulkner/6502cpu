@@ -14,8 +14,6 @@ func loadBinaryAtMemoryLocation(bus *pkg.Bus, startAddress uint16, data []byte) 
 }
 
 func main() {
-	fmt.Printf("so it begins....\n")
-
 	bus := pkg.NewBus()
 	cpu := pkg.NewCPU(bus)
 	bus.Connect(cpu)

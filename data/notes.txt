@@ -1,0 +1,1 @@
+cat official-nestest.log | cut -c1-16,49-74,87-100 > official-nestest-without-ppu.log
