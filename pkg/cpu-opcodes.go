@@ -484,8 +484,8 @@ func (c *CPU) PLP() uint8 {
 	c.status = Flag(c.read(0x0100 + uint16(c.stkp)))
 	c.setFlag(U, true)
 
-	// HACK...  always getting B flag set... but tests show it shouldn't be.
-	// FIXME(kpfaulkner) remove back
+	// based off https://www.nesdev.org/wiki/Status_flags abd https://www.reddit.com/r/EmuDev/comments/ov6zay/nestest_plp/
+	// I can set B to always false
 	c.setFlag(B, false)
 
 	return 0
